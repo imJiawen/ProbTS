@@ -65,6 +65,7 @@ class PatchTST(Forecaster):
         c_in = self.input_size
         context_window = self.context_length
         target_window = self.prediction_length
+        self.scale = None
 
         # Model
         self.decomposition = decomposition
@@ -112,16 +113,29 @@ class PatchTST(Forecaster):
         return x
 
     def loss(self, batch_data):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            self.scale = self.scaler.scale
+            
         inputs = self.get_inputs(batch_data, 'encode')
         inputs = self.enc_linear(inputs)
         outputs = self(inputs)
+        
+        if self.scale is not None:
+            outputs *= self.scale
         
         loss = self.loss_fn(batch_data.future_target_cdf, outputs)
         loss = self.get_weighted_loss(batch_data, loss)
         return loss.mean()
 
     def forecast(self, batch_data, num_samples=None):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            self.scale = self.scaler.scale
+            
         inputs = self.get_inputs(batch_data, 'encode')
         inputs = self.enc_linear(inputs)
         outputs = self(inputs)
+        if self.scale is not None:
+            outputs *= self.scale
         return outputs.unsqueeze(1)

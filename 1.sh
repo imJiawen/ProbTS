@@ -26,21 +26,21 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_revin/
 # if not specify dataset_path, the default path is ./datasets
 
 
-MODEL=itransformer
-use_norm=true
+MODEL=gru_nvp
+use_norm=false
 
-for DATASET in 'traffic_ltsf'
+for DATASET in 'etth1' 'weather_ltsf' 'electricity_ltsf'
 do
     for PRED_LEN in 96 192 336 720
     do
-        python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
+        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
-            --trainer.default_root_dir ${LOG_DIR}norm_${use_norm} \
+            --trainer.default_root_dir ${LOG_DIR}norm_temp \
             --data.data_manager.init_args.split_val true \
             --trainer.max_epochs 50 \
             --data.data_manager.init_args.dataset ${DATASET} \
             --data.data_manager.init_args.context_length ${CTX_LEN} \
             --data.data_manager.init_args.prediction_length ${PRED_LEN} \
-            --model.forecaster.init_args.use_norm ${use_norm} 
+            --model.forecaster.init_args.use_scaling true 
     done
 done
