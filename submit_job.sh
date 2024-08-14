@@ -15,7 +15,7 @@ CTX_LEN=96
 # scaling=true
 # scaler=standard # identity, standard
 
-for DATASET in 'etth1' 'exchange_ltsf' 'weather_ltsf'
+for DATASET in 'traffic_ltsf'
 do
     for PRED_LEN in 96 192 336 720
     do

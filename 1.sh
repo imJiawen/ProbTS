@@ -32,7 +32,7 @@ scaling=false
 
 for DATASET in 'exchange_rate_nips' 'solar_nips' 'electricity_nips' 'traffic_nips' 'wiki2000_nips'
 do
-    for scaler in identity standard
+    for scaler in identity
     do
         python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
