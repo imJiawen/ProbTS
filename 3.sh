@@ -1,11 +1,7 @@
-export CUDA_VISIBLE_DEVICES=2
-MODEL=patchtst
-DATASET=etth1
-CTX_LEN=96
-PRED_LEN=96
+export CUDA_VISIBLE_DEVICES=0
 
 DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_revin/
+LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
@@ -25,23 +21,31 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_revin/
 
 # if not specify dataset_path, the default path is ./datasets
 
-MODEL=patchtst
-use_norm=false
+MODEL=csdi
+CTX_LEN=96
 
-for DATASET in 'exchange_ltsf' 'traffic_ltsf'
+# scaler=identity # identity, standard
+
+
+revin=false
+scaling=false
+
+for DATASET in 'exchange_rate_nips' 'solar_nips' 'electricity_nips' 'traffic_nips' 'wiki2000_nips'
 do
-    for PRED_LEN in 96 192 336 720
+    for scaler in identity standard
     do
-        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
+        python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
-            --trainer.default_root_dir ${LOG_DIR}norm_temp \
+            --trainer.default_root_dir ${LOG_DIR}${scaler}_revin_${revin}_scaling_${scaling} \
             --data.data_manager.init_args.split_val true \
-            --trainer.max_epochs 50 \
+            --trainer.max_epochs 40 \
             --data.data_manager.init_args.dataset ${DATASET} \
-            --data.data_manager.init_args.context_length ${CTX_LEN} \
-            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
-            --model.forecaster.init_args.revin ${use_norm} \
-            --model.forecaster.init_args.use_scaling true \
-            --model.forecaster.init_args.individual false 
+            --model.forecaster.init_args.use_scaling ${scaling} \
+            --model.forecaster.init_args.revin ${revin} \
+            --data.batch_size 64 \
+            --data.test_batch_size 64 \
+            --trainer.limit_train_batches 100 \
+            --trainer.accumulate_grad_batches 1 \
+            --data.data_manager.init_args.scaler ${scaler}
     done
 done

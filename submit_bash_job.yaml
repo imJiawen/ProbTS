@@ -63,15 +63,15 @@ search:
     submit_args:
       max_run_duration_seconds: 1200000
     command:
-    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {individual} {model} {pred_len}
+    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {revin} {scaling} {scaler}
   max_trials: 1000
   type: grid
   params:
     - name: log_folder
-      values: ['/home/covpreduser/Blob/v-jiawezhang/log/abl_channel/']
-    - name: individual
+      values: ['/home/covpreduser/Blob/v-jiawezhang/log/abl_norm/']
+    - name: revin
       values: ['true', 'false']
-    - name: model
-      values: ['patchtst','dlinear']
-    - name: pred_len
-      values: [96, 192, 336, 720]
+    - name: scaling
+      values: ['true', 'false']
+    - name: scaler
+      values: ['identity', 'standard']

@@ -8,7 +8,7 @@
 
 import torch
 import torch.nn as nn
-
+from probts.utils import repeat
 class RevIN(nn.Module):
     def __init__(self, num_features: int, eps=1e-5, affine=True, subtract_last=False):
         """
@@ -24,12 +24,14 @@ class RevIN(nn.Module):
         if self.affine:
             self._init_params()
 
-    def forward(self, x, mode:str):
+    def forward(self, x, mode:str, num_samples=None, dim=0):
         if mode == 'norm':
             self._get_statistics(x)
-            x = self._normalize(x)
+            x = self._normalize(x, num_samples=num_samples, dim=dim)
         elif mode == 'denorm':
-            x = self._denormalize(x)
+            x = self._denormalize(x, num_samples=num_samples, dim=dim)
+        elif mode =='norm_only':
+            x = self._normalize(x, num_samples=num_samples, dim=dim)
         else: raise NotImplementedError
         return x
 
@@ -46,24 +48,39 @@ class RevIN(nn.Module):
             self.mean = torch.mean(x, dim=dim2reduce, keepdim=True).detach()
         self.stdev = torch.sqrt(torch.var(x, dim=dim2reduce, keepdim=True, unbiased=False) + self.eps).detach()
 
-    def _normalize(self, x):
+    def _normalize(self, x, num_samples=None, dim=0):
+        if num_samples is None:
+            mean = self.mean
+            std = self.stdev
+        else:
+            mean = repeat(self.mean, num_samples, dim=dim)
+            std = repeat(self.stdev, num_samples, dim=dim)
+            
         if self.subtract_last:
             x = x - self.last
         else:
-            x = x - self.mean
-        x = x / self.stdev
+            x = x - mean
+        x = x / std
         if self.affine:
             x = x * self.affine_weight
             x = x + self.affine_bias
         return x
 
-    def _denormalize(self, x):
+    def _denormalize(self, x, num_samples=None, dim=0):
+        if num_samples is None:
+            mean = self.mean
+            std = self.stdev
+        else:
+            mean = repeat(self.mean, num_samples, dim=dim)
+            std = repeat(self.stdev, num_samples, dim=dim)
+            
         if self.affine:
             x = x - self.affine_bias
             x = x / (self.affine_weight + self.eps*self.eps)
-        x = x * self.stdev
+        # print("x,shape")
+        x = x * std
         if self.subtract_last:
             x = x + self.last
         else:
-            x = x + self.mean
+            x = x + mean
         return x

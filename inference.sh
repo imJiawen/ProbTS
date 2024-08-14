@@ -1,11 +1,8 @@
-export CUDA_VISIBLE_DEVICES=1
-MODEL=patchtst
-DATASET=etth1
-CTX_LEN=96
-PRED_LEN=96
+export CUDA_VISIBLE_DEVICES=0
+
 
 DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_channel/
+LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/local/
 
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
@@ -25,22 +22,20 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_channel/
 
 # if not specify dataset_path, the default path is ./datasets
 
+MODEL=gru_nvp
+DATASET=traffic_ltsf
+CTX_LEN=96
+PRED_LEN=336
 
-MODEL=patchtst
-individual=true
 
-for DATASET in 'ettm1' etth2 'ettm2' 
-do
-    for PRED_LEN in 96 192 336 720
-    do
-        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
-            --data.data_manager.init_args.path ${DATA_DIR} \
-            --trainer.default_root_dir ${LOG_DIR}ch_dep_${individual} \
-            --data.data_manager.init_args.split_val true \
-            --trainer.max_epochs 50 \
-            --data.data_manager.init_args.dataset ${DATASET} \
-            --data.data_manager.init_args.context_length ${CTX_LEN} \
-            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
-            --model.forecaster.init_args.individual ${individual} 
-    done
-done
+python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
+    --data.data_manager.init_args.path ${DATA_DIR} \
+    --trainer.default_root_dir /data/Blob_WestJP/v-jiawezhang/log/abl_revin/norm_false/ \
+    --data.data_manager.init_args.split_val true \
+    --trainer.max_epochs 50 \
+    --data.data_manager.init_args.dataset ${DATASET} \
+    --data.data_manager.init_args.context_length ${CTX_LEN} \
+    --data.data_manager.init_args.prediction_length ${PRED_LEN} \
+    --model.forecaster.init_args.use_scaling false \
+    --model.load_from_ckpt /data/Blob_WestJP/v-jiawezhang/log/abl_revin/norm_false/ckpt/traffic_ltsf_96_336_GRU_NVP_0/epoch=33-val_CRPS=0.168.ckpt \
+    --model.forecaster.no_training true 

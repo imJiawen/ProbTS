@@ -11,10 +11,10 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from einops import repeat
+from einops import repeat, rearrange
 from probts.model.forecaster import Forecaster
 from probts.model.nn.layers import diff_CSDI
-
+from probts.model.nn.layers.RevIN import RevIN
 
 class CSDI(Forecaster):
     def __init__(
@@ -31,6 +31,8 @@ class CSDI(Forecaster):
         n_layers: int = 4,
         sample_size: int = 64,
         linear_trans: bool = False,
+        revin=False,
+        affine=False,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -66,6 +68,9 @@ class CSDI(Forecaster):
         self.alpha_hat = 1 - self.beta
         self.alpha = np.cumprod(self.alpha_hat)
         self.alpha_torch = torch.tensor(self.alpha).float().unsqueeze(1).unsqueeze(1).to(self.device)
+        self.revin = revin
+        if self.revin: self.revin_layer = RevIN(self.target_dim, affine=affine, subtract_last=False)
+        self.scale = None
 
     def time_embedding(self, pos, device, d_model=128):
         pe = torch.zeros(pos.shape[0], pos.shape[1], d_model).to(device)
@@ -113,6 +118,15 @@ class CSDI(Forecaster):
     def loss(self, batch_data, observed_tp=None):
         past_target_cdf = batch_data.past_target_cdf[:, -self.context_length:, ...]
         future_target_cdf = batch_data.future_target_cdf
+        
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            past_target_cdf = past_target_cdf / self.scaler.scale
+            future_target_cdf = future_target_cdf / self.scaler.scale
+        
+        if self.revin: 
+            past_target_cdf = self.revin_layer(past_target_cdf, 'norm')
+            future_target_cdf = self.revin_layer(future_target_cdf, 'norm_only')
 
         observed_data = torch.cat([past_target_cdf, future_target_cdf], dim=1)
         B, L, K = observed_data.shape
@@ -162,18 +176,35 @@ class CSDI(Forecaster):
         return loss.mean()
 
     def forecast(self, batch_data, num_samples):
-        observed_data = torch.cat([batch_data.past_target_cdf[:, -self.context_length:, ...], torch.zeros_like(batch_data.future_target_cdf)], dim=1).permute(0,2,1) 
+        past_target_cdf = batch_data.past_target_cdf[:, -self.context_length:, ...]
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            past_target_cdf = past_target_cdf / self.scaler.scale
+        
+            
+        if self.revin: 
+            past_target_cdf = self.revin_layer(past_target_cdf, 'norm')
+        observed_data = torch.cat([past_target_cdf, torch.zeros_like(batch_data.future_target_cdf)], dim=1).permute(0,2,1) 
         _, cond_mask = self.get_masks(batch_data)
         cond_mask = cond_mask.permute(0,2,1)
         side_info = self.get_side_info(observed_data, cond_mask, batch_data.target_dimension_indicator)
         sample = self.sample(observed_data, cond_mask, side_info, num_samples)
         sample = sample.permute(0,1,3,2)
+        
+        if self.revin: 
+            sample = rearrange(sample, 'b n l k -> (b n) l k')
+            sample = self.revin_layer(sample, 'denorm', num_samples=num_samples)
+            sample = rearrange(sample, '(b n) l k -> b n l k', n=num_samples)
+            
+        if self.use_scaling:
+            sample *= self.scaler.scale.unsqueeze(1)
+            
         return sample[:, : , -self.prediction_length:, :] # [B N L K]
 
     def sample(self, observed_data, cond_mask, side_info, n_samples):
         B, K, L = observed_data.shape
         imputed_samples = torch.zeros(B, n_samples, K, L).to(observed_data.device)
-
+        
         for i in range(n_samples):
             current_sample = torch.randn_like(observed_data).to(observed_data.device)
 
@@ -193,7 +224,7 @@ class CSDI(Forecaster):
                         (1.0 - self.alpha[t - 1]) / (1.0 - self.alpha[t]) * self.beta[t]
                     ) ** 0.5
                     current_sample += sigma * noise
-
+            
             imputed_samples[:, i] = current_sample.detach()
         return imputed_samples
 

@@ -1,15 +1,3 @@
-export CUDA_VISIBLE_DEVICES=0
-MODEL=patchtst
-DATASET=etth1
-CTX_LEN=96
-PRED_LEN=96
-
-# DATA_DIR=/path/to/datasets
-# LOG_DIR=/path/to/log_dir
-
-DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/local/
-
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
 
@@ -18,26 +6,33 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/local/
 
 # Long-term forecasting:
 # ['etth1', 'etth2','ettm1','ettm2','traffic_ltsf', 'electricity_ltsf', 'exchange_ltsf', 'illness_ltsf', 'weather_ltsf']
-# NOTE: when using long-term forecasting datasets, please explicit assign context_length and prediction_length, e.g., :
-# --data.data_manager.init_args.context_length 96 \
-# --data.data_manager.init_args.prediction_length 192 \
-
-# run pipeline with train and test
-# replace ${MODEL} with tarfet model name, e.g, patchtst
-# replace ${DATASET} with dataset name
-
-# if not specify dataset_path, the default path is ./datasets
 
 
-for DATASET in 'etth1' 'etth2''ettm1' 'ettm2' 'exchange_ltsf' 'weather_ltsf' 'traffic_ltsf' 'electricity_ltsf' 'illness_ltsf'
+MODEL=timegrad
+CTX_LEN=96
+
+# revin=false
+# scaling=true
+# scaler=standard # identity, standard
+
+for DATASET in 'etth1' 'exchange_ltsf' 'weather_ltsf'
 do
-    python run.py --config config/ltsf/${DATASET}/${4}.yaml --seed_everything 0  \
-        --data.data_manager.init_args.path ${2} \
-        --trainer.default_root_dir ${1}individual_${3} \
-        --data.data_manager.init_args.split_val true \
-        --trainer.max_epochs 50 \
-        --data.data_manager.init_args.dataset ${DATASET} \
-        --data.data_manager.init_args.context_length ${CTX_LEN} \
-        --data.data_manager.init_args.prediction_length ${5} \
-        --model.forecaster.init_args.individual ${3} 
+    for PRED_LEN in 96 192 336 720
+    do
+        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
+            --data.data_manager.init_args.path ${2} \
+            --trainer.default_root_dir ${1}${5}_revin_${3}_scaling_${4} \
+            --data.data_manager.init_args.split_val true \
+            --trainer.max_epochs 40 \
+            --data.data_manager.init_args.dataset ${DATASET} \
+            --data.data_manager.init_args.context_length ${CTX_LEN} \
+            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
+            --model.forecaster.init_args.use_scaling ${4} \
+            --model.forecaster.init_args.revin ${3} \
+            --data.batch_size 64 \
+            --data.test_batch_size 64 \
+            --trainer.limit_train_batches 100 \
+            --trainer.accumulate_grad_batches 1 \
+            --data.data_manager.init_args.scaler ${5}
+    done
 done

@@ -15,7 +15,7 @@ from probts.data import ProbTSBatchData
 from probts.utils import repeat
 from probts.model.forecaster import Forecaster
 from probts.model.nn import GaussianDiffusion
-
+from probts.model.nn.layers.RevIN import RevIN
 
 class TimeGrad(Forecaster):
     def __init__(
@@ -28,10 +28,14 @@ class TimeGrad(Forecaster):
         diff_steps: int = 100,
         loss_type: str = "l2",
         beta_schedule: str = "linear",
+        revin=False,
+        affine=False,
         **kwargs
     ):
         super().__init__(**kwargs)
         self.autoregressive = True
+        self.revin = revin
+        if self.revin: self.revin_layer = RevIN(self.target_dim, affine=affine, subtract_last=False)
         
         self.encoder = nn.GRU(
             input_size=self.input_size,
@@ -56,11 +60,19 @@ class TimeGrad(Forecaster):
             self.prob_model.scale = self.scaler.scale
         
         inputs = self.get_inputs(batch_data, 'all')
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm')
         enc_outs, states = self.encoder(inputs)
         enc_outs = enc_outs[:, -self.prediction_length-1:-1, ...]
         
         dist_args = self.prob_model.dist_args(enc_outs)
-        loss = self.prob_model.loss(batch_data.future_target_cdf, dist_args).unsqueeze(-1)
+        
+        if self.revin: 
+            target = self.revin_layer(batch_data.future_target_cdf, 'norm_only')
+        else:
+            target = batch_data.future_target_cdf
+            
+        loss = self.prob_model.loss(target, dist_args).unsqueeze(-1)
         loss = self.get_weighted_loss(batch_data, loss)
         return loss.mean()
 
@@ -87,10 +99,13 @@ class TimeGrad(Forecaster):
                 'future_time_feat': repeated_future_time_feat[:, k:k+1, ...]
             }, device=batch_data.device)
 
-            enc_outs, repeated_states = self.decode(repeated_batch_data, repeated_states)
+            enc_outs, repeated_states = self.decode(repeated_batch_data, repeated_states, num_samples=num_samples)
             # Sample
             dist_args = self.prob_model.dist_args(enc_outs)
             new_samples = self.prob_model.sample(cond=dist_args)
+            
+            if self.revin: 
+                new_samples = self.revin_layer(new_samples, 'denorm', num_samples=num_samples)
             future_samples.append(new_samples)
 
             repeated_past_target_cdf = torch.cat(
@@ -103,10 +118,14 @@ class TimeGrad(Forecaster):
 
     def encode(self, batch_data):
         inputs = self.get_inputs(batch_data, 'encode')
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm')
         outputs, states = self.encoder(inputs)
         return states
 
-    def decode(self, batch_data, states=None):
+    def decode(self, batch_data, states=None, num_samples=None):
         inputs = self.get_inputs(batch_data, 'decode')
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm_only',num_samples=num_samples)
         outputs, states = self.encoder(inputs, states)
         return outputs, states

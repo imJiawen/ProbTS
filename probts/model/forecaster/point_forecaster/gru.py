@@ -26,12 +26,20 @@ class GRUForecaster(Forecaster):
         )
         self.linear = nn.Linear(f_hidden_size, self.target_dim)
         self.loss_fn = nn.MSELoss(reduction='none')
+        self.scale = None
 
     def loss(self, batch_data):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            self.scale = self.scaler.scale
         inputs = self.get_inputs(batch_data, 'all')
+        
         outputs, _ = self.model(inputs)
         outputs = outputs[:, -self.prediction_length-1:-1, ...]
         outputs = self.linear(outputs)
+        
+        if self.scale is not None:
+            outputs *= self.scale
         
         loss = self.loss_fn(batch_data.future_target_cdf, outputs)
         loss = self.get_weighted_loss(batch_data, loss)
@@ -39,6 +47,9 @@ class GRUForecaster(Forecaster):
 
     def forecast(self, batch_data, num_samples=None):
         forecasts = []
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            self.scale = self.scaler.scale
         states = self.encode(batch_data)
         past_target_cdf = batch_data.past_target_cdf
         
@@ -59,6 +70,8 @@ class GRUForecaster(Forecaster):
 
         forecasts = torch.cat(forecasts, dim=1).reshape(
             -1, self.prediction_length, self.target_dim)
+        if self.scale is not None:
+            forecasts *= self.scale
         return forecasts.unsqueeze(1)
 
     def encode(self, batch_data):

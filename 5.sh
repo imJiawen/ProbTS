@@ -5,7 +5,7 @@ CTX_LEN=96
 PRED_LEN=96
 
 DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_revin/
+LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_channel/
 
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
@@ -27,17 +27,20 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_revin/
 
 
 MODEL=patchtst
-use_norm=true
+individual=false
 
-for DATASET in 'traffic'
+for DATASET in 'ettm1' etth2 'ettm2' 
 do
-    for use_norm in true false
+    for PRED_LEN in 96 192 336 720
     do
-        python run.py --config config/stsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
+        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
-            --trainer.default_root_dir ${LOG_DIR}norm_${use_norm} \
+            --trainer.default_root_dir ${LOG_DIR}ch_dep_${individual} \
             --data.data_manager.init_args.split_val true \
             --trainer.max_epochs 50 \
-            --model.forecaster.init_args.revin ${use_norm} 
+            --data.data_manager.init_args.dataset ${DATASET} \
+            --data.data_manager.init_args.context_length ${CTX_LEN} \
+            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
+            --model.forecaster.init_args.individual ${individual} 
     done
 done
