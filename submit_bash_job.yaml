@@ -63,7 +63,7 @@ search:
     submit_args:
       max_run_duration_seconds: 1200000
     command:
-    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {revin} {scaling} {scaler}
+    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {revin} {scaling} {pred_len}
   max_trials: 1000
   type: grid
   params:
@@ -73,5 +73,5 @@ search:
       values: ['true', 'false']
     - name: scaling
       values: ['true', 'false']
-    - name: scaler
-      values: ['identity', 'standard']
+    - name: pred_len
+      values: [96, 192,336,720]

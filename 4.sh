@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=3
 
 DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
 LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
@@ -21,20 +21,20 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # if not specify dataset_path, the default path is ./datasets
 
-MODEL=csdi
+MODEL=gru_nvp
 CTX_LEN=96
 
-# scaler=identity # identity, standard
+scaler=standard # identity, standard
 
 
 revin=true
 scaling=false
 
-for DATASET in 'wiki2000_nips' 'traffic_nips' 'electricity_nips' 'solar_nips' 'exchange_rate_nips' 
+for DATASET in 'electricity_ltsf'
 do
-    for scaler in standard
+    for PRED_LEN in 740
     do
-        python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
+        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
             --trainer.default_root_dir ${LOG_DIR}${scaler}_revin_${revin}_scaling_${scaling} \
             --data.data_manager.init_args.split_val true \
@@ -42,6 +42,8 @@ do
             --data.data_manager.init_args.dataset ${DATASET} \
             --model.forecaster.init_args.use_scaling ${scaling} \
             --model.forecaster.init_args.revin ${revin} \
+            --data.data_manager.init_args.context_length ${CTX_LEN} \
+            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
             --data.batch_size 64 \
             --data.test_batch_size 64 \
             --trainer.limit_train_batches 100 \

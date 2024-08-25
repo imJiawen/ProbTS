@@ -9,6 +9,8 @@ from lightning.pytorch.cli import LightningCLI
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint
 
+from probts.utils import find_best_epoch
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -55,6 +57,11 @@ class ProbTSCli(LightningCLI):
             os.makedirs(self.trainer.default_root_dir)
 
         if self.model.load_from_ckpt is not None:
+            if '.ckpt' not in self.model.load_from_ckpt:
+                best_ckpt = find_best_epoch(self.model.load_from_ckpt)
+                print("find best ckpt ", best_ckpt)
+                self.model.load_from_ckpt = os.path.join(self.model.load_from_ckpt, best_ckpt)
+            
             log.info(f"Loading pre-trained checkpoint from {self.model.load_from_ckpt}")
             self.model = ProbTSForecastModule.load_from_checkpoint(
                 self.model.load_from_ckpt,

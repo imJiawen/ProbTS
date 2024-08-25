@@ -10,7 +10,8 @@
 import torch
 import numpy as np
 from typing import Optional, Dict
-
+import os
+import re
 
 class Scaler:
     def __init__(self):
@@ -226,3 +227,21 @@ def weighted_average(
         ) / sum_weights
     else:
         return x.mean(dim=dim)
+    
+
+def find_best_epoch(ckpt_folder):
+    """
+    Find the highest epoch in the Test Tube file structure.
+    :param ckpt_folder: dir where the checpoints are being saved.
+    :return: Integer of the highest epoch reached by the checkpoints.
+    """
+    pattern = r"val_CRPS=([0-9]*\.[0-9]+)"
+    ckpt_files = os.listdir(ckpt_folder)  # list of strings
+    epochs = []
+    for filename in ckpt_files:
+        match = re.search(pattern, filename)
+        if match:  
+            epochs.append(match.group(1))
+    # epochs = [float(filename[18:-5]) for filename in ckpt_files]  # 'epoch={int}.ckpt' filename format
+    best_crps = min(epochs)
+    return ckpt_files[epochs.index(best_crps)]
