@@ -1,0 +1,77 @@
+description: ProbTS
+
+target:
+  service: sing
+  name: msrresrchvc
+  workspace_name: epeastus
+
+# name: msrresrchvc, msroctovc
+# amlt-sing/acpt-2.0.1-py3.10-cuda11.8
+# amlt-sing/acpt-2.2.1-py3.10-cuda12.1
+# environment:
+#   image: amlt-sing/acpt-2.0.1-py3.10-cuda11.8
+environment:
+  registry: singularitybase.azurecr.io
+  image: base/job/pytorch/acpt-2.2.1-py3.10-cuda12.1:20240312T225111416
+  setup:
+    - pip install --upgrade pip
+    - pip install --upgrade setuptools
+    - pip install pytz
+    - pip install timm
+    - pip install numpy==1.23.5
+    - pip install pandas
+    - pip install scikit-learn
+    - pip install wandb
+    - pip install einops
+    - pip install matplotlib
+    - pip install tqdm==4.66.2
+    - pip install https://github.com/Lightning-AI/lightning/archive/refs/heads/master.zip -U
+    - pip install gluonts==0.13.1
+    - pip install jsonargparse
+    - pip install typeshed-client==2.3.0
+    - pip install docstring-parser==0.15
+    - pip install pydantic==1.10.8
+    - pip install linear-attention-transformer==0.19.1
+    - pip install tensorboardx==2.6.2
+    - pip install pyarrow==11.0.0
+    - pip install protobuf==3.20
+    - pip install opt_einsum
+    - pip install pykeops
+    - pip install taming-transformers
+    - pip install xformers==0.0.24
+    - pip install reformer_pytorch
+    # - pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
+    # - pip uninstall -y horovod
+    # - HOROVOD_WITH_PYTORCH=1 pip install horovod --no-cache-dir 
+    # - pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118
+    # - pip install ray==2.8.1
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  local_dir: $CONFIG_DIR
+
+storage:
+  shared_datastore:
+    storage_account_name: epeastus
+    container_name: cov19
+    mount_dir: /home/covpreduser/Blob
+
+search:
+  job_template:
+    name: pldm_{experiment_name:s}_{auto:4s}
+    sku: 80G1-A100
+    submit_args:
+      max_run_duration_seconds: 1200000
+    command:
+    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {revin} {scaling} {pred_len}
+  max_trials: 1000
+  type: grid
+  params:
+    - name: log_folder
+      values: ['/home/covpreduser/Blob/v-jiawezhang/log/abl_norm/']
+    - name: revin
+      values: ['true', 'false']
+    - name: scaling
+      values: ['true', 'false']
+    - name: pred_len
+      values: [96, 192,336,720]
