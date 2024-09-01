@@ -2,7 +2,7 @@ description: ProbTS
 
 target:
   service: sing
-  name: msrresrchvc # msrresrchvc, msroctovc
+  name: msroctovc # msrresrchvc, msroctovc
   workspace_name: epeastus
 
 # name: msrresrchvc, msroctovc
@@ -59,7 +59,7 @@ storage:
 search:
   job_template:
     name: pldm_{experiment_name:s}_{auto:4s}
-    sku: 80G1-A100
+    sku: 40G1-A100
     identity: managed
     submit_args:
       max_run_duration_seconds: 1200000
@@ -73,11 +73,11 @@ search:
     - name: log_folder
       values: ['/home/covpreduser/Blob/v-jiawezhang/log/abl_norm/']
     - name: pred_Len
-      values: [720]
+      values: [96,336]
     - name: revin
       values: ['true', 'false']
     - name: scaling
       values: ['true', 'false']
     - name: model
-      values: ['csdi']
+      values: ['timegrad']
     

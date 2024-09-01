@@ -31,10 +31,10 @@ do
         --data.data_manager.init_args.prediction_length ${3} \
         --model.forecaster.init_args.use_scaling ${6} \
         --model.forecaster.init_args.revin ${5} \
-        --data.batch_size 16 \
-        --data.test_batch_size 16 \
-        --trainer.limit_train_batches 200 \
-        --trainer.accumulate_grad_batches 2 \
+        --data.batch_size 32 \
+        --data.test_batch_size 32 \
+        --trainer.limit_train_batches 100 \
+        --trainer.accumulate_grad_batches 1 \
         --data.data_manager.init_args.scaler $scaler
 done
 
