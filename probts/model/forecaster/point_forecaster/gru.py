@@ -4,7 +4,7 @@ import torch.nn as nn
 from probts.data import ProbTSBatchData
 from probts.utils import repeat
 from probts.model.forecaster import Forecaster
-
+from probts.model.nn.layers.RevIN import RevIN
 
 class GRUForecaster(Forecaster):
     def __init__(
@@ -12,6 +12,8 @@ class GRUForecaster(Forecaster):
         num_layers: int = 2,
         f_hidden_size: int = 40,
         dropout: float = 0.1,
+        revin: bool = False,
+        affine: bool = False,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -27,6 +29,9 @@ class GRUForecaster(Forecaster):
         self.linear = nn.Linear(f_hidden_size, self.target_dim)
         self.loss_fn = nn.MSELoss(reduction='none')
         self.scale = None
+        
+        self.revin = revin
+        if self.revin: self.revin_layer = RevIN(self.target_dim, affine=affine, subtract_last=False)
 
     def loss(self, batch_data):
         if self.use_scaling:
@@ -34,9 +39,17 @@ class GRUForecaster(Forecaster):
             self.scale = self.scaler.scale
         inputs = self.get_inputs(batch_data, 'all')
         
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm')
+        
         outputs, _ = self.model(inputs)
         outputs = outputs[:, -self.prediction_length-1:-1, ...]
         outputs = self.linear(outputs)
+        
+        if self.revin: 
+            target = self.revin_layer(batch_data.future_target_cdf, 'norm_only')
+        else:
+            target = batch_data.future_target_cdf
         
         if self.scale is not None:
             outputs *= self.scale
@@ -62,6 +75,10 @@ class GRUForecaster(Forecaster):
 
             outputs, states = self.decode(current_batch_data, states)
             outputs = self.linear(outputs)
+            
+            if self.revin: 
+                outputs = self.revin_layer(outputs, 'denorm')
+            
             forecasts.append(outputs)
 
             past_target_cdf = torch.cat(
@@ -76,10 +93,14 @@ class GRUForecaster(Forecaster):
 
     def encode(self, batch_data):
         inputs = self.get_inputs(batch_data, 'encode')
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm')
         outputs, states = self.model(inputs)
         return states
 
-    def decode(self, batch_data, states=None):
+    def decode(self, batch_data, states=None, num_samples=None):
         inputs = self.get_inputs(batch_data, 'decode')
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm_only')
         outputs, states = self.model(inputs, states)
         return outputs, states

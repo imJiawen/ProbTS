@@ -1,7 +1,8 @@
 export CUDA_VISIBLE_DEVICES=1
 
 DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
+# LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
+LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/local/
 
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
@@ -11,9 +12,7 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # Long-term forecasting:
 # ['etth1', 'etth2','ettm1','ettm2','traffic_ltsf', 'electricity_ltsf', 'exchange_ltsf', 'illness_ltsf', 'weather_ltsf']
-# NOTE: when using long-term forecasting datasets, please explicit assign context_length and prediction_length, e.g., :
-# --data.data_manager.init_args.context_length 96 \
-# --data.data_manager.init_args.prediction_length 192 \
+
 
 # run pipeline with train and test
 # replace ${MODEL} with tarfet model name, e.g, patchtst
@@ -21,18 +20,18 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # if not specify dataset_path, the default path is ./datasets
 
-MODEL=csdi
+MODEL=patchtst
 CTX_LEN=96
 
 # scaler=identity # identity, standard
 
 
-revin=true
-scaling=false
+revin=false
+scaling=true
 
-for DATASET in 'exchange_rate_nips' 'solar_nips' 'electricity_nips' 'traffic_nips' 'wiki2000_nips'
+for DATASET in 'illness_ltsf'
 do
-    for scaler in identity
+    for scaler in standard
     do
         python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \

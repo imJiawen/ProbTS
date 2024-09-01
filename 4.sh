@@ -1,7 +1,7 @@
-export CUDA_VISIBLE_DEVICES=3
+# export CUDA_VISIBLE_DEVICES=1
 
-DATA_DIR='/data/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
+DATA_DIR='/home/v-zhangjiaw/Blob_WestJP/v-jiawezhang/data/all_datasets/'
+LOG_DIR=/home/v-zhangjiaw/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
@@ -21,31 +21,83 @@ LOG_DIR=/data/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # if not specify dataset_path, the default path is ./datasets
 
-MODEL=gru_nvp
+MODEL=gru
 CTX_LEN=96
 
 scaler=standard # identity, standard
 
 
-revin=true
-scaling=false
+revin=false
+scaling=true
 
-for DATASET in 'electricity_ltsf'
+for DATASET in 'traffic_ltsf' 'electricity_ltsf' 'exchange_ltsf' 'weather_ltsf'
 do
-    for PRED_LEN in 740
+    for PRED_LEN in 96 192 336 720
     do
-        python run.py --config config/ltsf/${DATASET}/${MODEL}.yaml --seed_everything 0  \
+        python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
             --trainer.default_root_dir ${LOG_DIR}${scaler}_revin_${revin}_scaling_${scaling} \
             --data.data_manager.init_args.split_val true \
-            --trainer.max_epochs 40 \
+            --trainer.max_epochs 50 \
             --data.data_manager.init_args.dataset ${DATASET} \
             --model.forecaster.init_args.use_scaling ${scaling} \
             --model.forecaster.init_args.revin ${revin} \
             --data.data_manager.init_args.context_length ${CTX_LEN} \
             --data.data_manager.init_args.prediction_length ${PRED_LEN} \
-            --data.batch_size 64 \
-            --data.test_batch_size 64 \
+            --data.batch_size 32 \
+            --data.test_batch_size 32 \
+            --trainer.limit_train_batches 100 \
+            --trainer.accumulate_grad_batches 1 \
+            --data.data_manager.init_args.scaler ${scaler}
+    done
+done
+
+
+revin=false
+scaling=false
+
+for DATASET in 'traffic_ltsf' 'electricity_ltsf' 'exchange_ltsf' 'weather_ltsf'
+do
+    for PRED_LEN in 96 192 336 720
+    do
+        python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
+            --data.data_manager.init_args.path ${DATA_DIR} \
+            --trainer.default_root_dir ${LOG_DIR}${scaler}_revin_${revin}_scaling_${scaling} \
+            --data.data_manager.init_args.split_val true \
+            --trainer.max_epochs 50 \
+            --data.data_manager.init_args.dataset ${DATASET} \
+            --model.forecaster.init_args.use_scaling ${scaling} \
+            --model.forecaster.init_args.revin ${revin} \
+            --data.data_manager.init_args.context_length ${CTX_LEN} \
+            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
+            --data.batch_size 32 \
+            --data.test_batch_size 32 \
+            --trainer.limit_train_batches 100 \
+            --trainer.accumulate_grad_batches 1 \
+            --data.data_manager.init_args.scaler ${scaler}
+    done
+done
+
+
+revin=true
+scaling=false
+
+for DATASET in 'traffic_ltsf' 'electricity_ltsf' 'exchange_ltsf' 'weather_ltsf'
+do
+    for PRED_LEN in 96 192 336 720
+    do
+        python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
+            --data.data_manager.init_args.path ${DATA_DIR} \
+            --trainer.default_root_dir ${LOG_DIR}${scaler}_revin_${revin}_scaling_${scaling} \
+            --data.data_manager.init_args.split_val true \
+            --trainer.max_epochs 50 \
+            --data.data_manager.init_args.dataset ${DATASET} \
+            --model.forecaster.init_args.use_scaling ${scaling} \
+            --model.forecaster.init_args.revin ${revin} \
+            --data.data_manager.init_args.context_length ${CTX_LEN} \
+            --data.data_manager.init_args.prediction_length ${PRED_LEN} \
+            --data.batch_size 32 \
+            --data.test_batch_size 32 \
             --trainer.limit_train_batches 100 \
             --trainer.accumulate_grad_batches 1 \
             --data.data_manager.init_args.scaler ${scaler}
