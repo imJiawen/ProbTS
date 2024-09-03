@@ -19,24 +19,23 @@ scaler=standard # identity, standard
 # revin=true
 # scaling=false
 
-for DATASET in 'etth2' 'ettm1' 'ettm2'
-do
-    python run.py --config config/ltsf/${DATASET}/${4}.yaml --seed_everything 0  \
-        --data.data_manager.init_args.path ${2} \
-        --trainer.default_root_dir ${1}${scaler}_revin_${5}_scaling_${6} \
-        --data.data_manager.init_args.split_val true \
-        --trainer.max_epochs 40 \
-        --data.data_manager.init_args.dataset ${DATASET} \
-        --data.data_manager.init_args.context_length ${CTX_LEN} \
-        --data.data_manager.init_args.prediction_length ${3} \
-        --model.forecaster.init_args.use_scaling ${6} \
-        --model.forecaster.init_args.revin ${5} \
-        --data.batch_size 32 \
-        --data.test_batch_size 32 \
-        --trainer.limit_train_batches 100 \
-        --trainer.accumulate_grad_batches 1 \
-        --data.data_manager.init_args.scaler $scaler
-done
+
+python run.py --config config/ltsf/${7}/${4}.yaml --seed_everything 0  \
+    --data.data_manager.init_args.path ${2} \
+    --trainer.default_root_dir ${1}${scaler}_revin_${5}_scaling_${6} \
+    --data.data_manager.init_args.split_val true \
+    --trainer.max_epochs 50 \
+    --data.data_manager.init_args.dataset ${7} \
+    --data.data_manager.init_args.context_length ${CTX_LEN} \
+    --data.data_manager.init_args.prediction_length ${3} \
+    --model.forecaster.init_args.use_scaling ${6} \
+    --model.forecaster.init_args.revin ${5} \
+    --data.batch_size 32 \
+    --data.test_batch_size 64 \
+    --trainer.limit_train_batches 100 \
+    --trainer.accumulate_grad_batches 1 \
+    --data.data_manager.init_args.scaler $scaler
+
 
 
 # revin=false

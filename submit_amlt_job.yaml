@@ -66,18 +66,20 @@ search:
       env:
         _AZUREML_SINGULARITY_JOB_UAI: "/subscriptions/e033d461-1923-44a7-872b-78f1d35a86dd/resourcegroups/Shun/providers/Microsoft.ManagedIdentity/userAssignedIdentities/epeastus_mi"
     command:
-    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {pred_Len} {model} {revin} {scaling}
+    - bash submit_job.sh {log_folder} '/home/covpreduser/Blob/v-jiawezhang/data/all_datasets/' {pred_Len} {model} {revin} {scaling} {dataset}
   max_trials: 1000
   type: grid
   params:
     - name: log_folder
       values: ['/home/covpreduser/Blob/v-jiawezhang/log/abl_norm/']
     - name: pred_Len
-      values: [96,336]
+      values: [336]
     - name: revin
       values: ['true', 'false']
     - name: scaling
-      values: ['true', 'false']
+      values: ['false', 'true']
+    - name: dataset
+      values: ['ettm1']
     - name: model
       values: ['timegrad']
     
