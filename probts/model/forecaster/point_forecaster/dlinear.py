@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 from probts.model.forecaster import Forecaster
 import sys
+from probts.model.nn.layers.RevIN import RevIN
 
 class moving_avg(nn.Module):
     """
@@ -51,6 +52,8 @@ class DLinear(Forecaster):
         self,
         kernel_size: int,
         individual: bool,
+        revin: bool = False,
+        affine: bool = False,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -61,7 +64,8 @@ class DLinear(Forecaster):
         else:
             self.enc_linear = nn.Identity()
 
-
+        self.revin = revin
+        if self.revin: self.revin_layer = RevIN(self.target_dim, affine=affine, subtract_last=False)
         # Decompsition Kernel Size
         self.kernel_size = kernel_size
         self.decompsition = series_decomp(kernel_size)
@@ -99,16 +103,42 @@ class DLinear(Forecaster):
         return outputs.permute(0,2,1)
 
     def loss(self, batch_data):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            
         inputs = self.get_inputs(batch_data, 'encode')
+        
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm')
+            
         inputs = self.enc_linear(inputs)
         outputs = self.encoder(inputs)
         
+        if self.revin: 
+            outputs = self.revin_layer(outputs, 'denorm')
+        
+        if self.use_scaling:
+            outputs *= self.scaler.scale
+            
         loss = self.loss_fn(batch_data.future_target_cdf, outputs)
         loss = self.get_weighted_loss(batch_data, loss)
         return loss.mean()
 
     def forecast(self, batch_data, num_samples=None):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            
         inputs = self.get_inputs(batch_data, 'encode')
+        
+        if self.revin: 
+            inputs[:,:,:self.target_dim] = self.revin_layer(inputs[:,:,:self.target_dim], 'norm')
+            
         inputs = self.enc_linear(inputs)
         outputs = self.encoder(inputs)
+        
+        if self.revin: 
+            outputs = self.revin_layer(outputs, 'denorm')
+            
+        if self.use_scaling:
+            outputs *= self.scaler.scale
         return outputs.unsqueeze(1)

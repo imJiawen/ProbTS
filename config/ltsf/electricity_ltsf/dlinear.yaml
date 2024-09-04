@@ -12,7 +12,7 @@ trainer:
   default_root_dir: ./results
 model:
   forecaster:
-    class_path: probts.model.forecaster.point_forecaster.DLinearEncoder
+    class_path: probts.model.forecaster.point_forecaster.DLinear
     init_args:
       individual: true
       kernel_size: 25

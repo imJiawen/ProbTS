@@ -16,68 +16,27 @@ scaler=standard # identity, standard
 # DATASET='illness_ltsf'
 
 
-# revin=true
-# scaling=false
+# revin=false
+# scaling=true
 
+# MODEL=dlinear
 
-python run.py --config config/ltsf/${7}/${4}.yaml --seed_everything 0  \
+# config/ltsf/${4}/${3}
+
+python run.py --config config/ltsf/${4}/${3}.yaml --seed_everything 0  \
     --data.data_manager.init_args.path ${2} \
-    --trainer.default_root_dir ${1}${scaler}_revin_${5}_scaling_${6} \
+    --trainer.default_root_dir ${1}${scaler}_revin_${6}_scaling_${7} \
     --data.data_manager.init_args.split_val true \
-    --trainer.max_epochs 50 \
-    --data.data_manager.init_args.dataset ${7} \
+    --trainer.max_epochs 40 \
+    --data.data_manager.init_args.dataset ${4} \
     --data.data_manager.init_args.context_length ${CTX_LEN} \
-    --data.data_manager.init_args.prediction_length ${3} \
-    --model.forecaster.init_args.use_scaling ${6} \
-    --model.forecaster.init_args.revin ${5} \
+    --data.data_manager.init_args.prediction_length ${5} \
+    --model.forecaster.init_args.use_scaling ${7} \
+    --model.forecaster.init_args.revin ${6} \
     --data.batch_size 32 \
-    --data.test_batch_size 64 \
+    --data.test_batch_size 32 \
     --trainer.limit_train_batches 100 \
     --trainer.accumulate_grad_batches 1 \
     --data.data_manager.init_args.scaler $scaler
 
 
-
-# revin=false
-# scaling=false
-
-# for DATASET in 'etth2' 'ettm1' 'ettm2'
-# do
-#     python run.py --config config/ltsf/${DATASET}/${4}.yaml --seed_everything 0  \
-#         --data.data_manager.init_args.path ${2} \
-#         --trainer.default_root_dir ${1}${scaler}_revin_${revin}_scaling_${scaling} \
-#         --data.data_manager.init_args.split_val true \
-#         --trainer.max_epochs 40 \
-#         --data.data_manager.init_args.dataset ${DATASET} \
-#         --data.data_manager.init_args.context_length ${CTX_LEN} \
-#         --data.data_manager.init_args.prediction_length ${3} \
-#         --model.forecaster.init_args.use_scaling ${scaling} \
-#         --model.forecaster.init_args.revin ${revin} \
-#         --data.batch_size 16 \
-#         --data.test_batch_size 16 \
-#         --trainer.limit_train_batches 200 \
-#         --trainer.accumulate_grad_batches 2 \
-#         --data.data_manager.init_args.scaler $scaler
-# done
-
-# revin=false
-# scaling=true
-
-# for DATASET in 'etth2' 'ettm1' 'ettm2'
-# do
-#     python run.py --config config/ltsf/${DATASET}/${4}.yaml --seed_everything 0  \
-#         --data.data_manager.init_args.path ${2} \
-#         --trainer.default_root_dir ${1}${scaler}_revin_${revin}_scaling_${scaling} \
-#         --data.data_manager.init_args.split_val true \
-#         --trainer.max_epochs 40 \
-#         --data.data_manager.init_args.dataset ${DATASET} \
-#         --data.data_manager.init_args.context_length ${CTX_LEN} \
-#         --data.data_manager.init_args.prediction_length ${3} \
-#         --model.forecaster.init_args.use_scaling ${scaling} \
-#         --model.forecaster.init_args.revin ${revin} \
-#         --data.batch_size 16 \
-#         --data.test_batch_size 16 \
-#         --trainer.limit_train_batches 200 \
-#         --trainer.accumulate_grad_batches 2 \
-#         --data.data_manager.init_args.scaler $scaler
-# done

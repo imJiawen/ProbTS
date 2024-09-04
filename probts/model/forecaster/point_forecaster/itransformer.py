@@ -25,7 +25,7 @@ class iTransformer(Forecaster):
         output_attention: bool = False,
         d_ff: int = 512,
         label_len: int = 48,
-        use_norm: bool = True,
+        revin: bool = True,
         class_strategy:str = 'projection',
         dropout: float = 0.1,
         f_hidden_size: int = 512,
@@ -35,7 +35,7 @@ class iTransformer(Forecaster):
         
         self.label_len = label_len
         
-        self.use_norm = use_norm
+        self.revin = revin
         # Embedding
         self.enc_embedding = DataEmbedding_inverted(self.context_length, f_hidden_size,
                                                     dropout)
@@ -66,8 +66,7 @@ class iTransformer(Forecaster):
             past_target = inputs
             x_mark_enc = None
             
-        
-        if self.use_norm:
+        if self.revin:
             # Normalization from Non-stationary Transformer
             means = past_target.mean(1, keepdim=True).detach()
             past_target = past_target - means
@@ -90,7 +89,8 @@ class iTransformer(Forecaster):
         # B N E -> B N S -> B S N 
         dec_out = self.projector(enc_out).permute(0, 2, 1)[:, :, :N] # filter the covariates
 
-        if self.use_norm:
+            
+        if self.revin:
             # De-Normalization from Non-stationary Transformer
             dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.prediction_length, 1))
             dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.prediction_length, 1))
@@ -98,15 +98,23 @@ class iTransformer(Forecaster):
         return dec_out[:, -self.prediction_length:, :]
 
     def forecast(self, batch_data, num_samples=None):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+        
         inputs = self.get_inputs(batch_data, 'encode')
         output = self(inputs)
-
+        if self.use_scaling:
+            output *= self.scaler.scale
         return output.unsqueeze(1)
 
     def loss(self, batch_data):
+        if self.use_scaling:
+            self.get_scale(batch_data)
+            
         inputs = self.get_inputs(batch_data, 'encode')
         outputs = self(inputs)
-        
+        if self.use_scaling:
+            outputs *= self.scaler.scale
         loss = self.loss_fn(batch_data.future_target_cdf, outputs)
         loss = self.get_weighted_loss(batch_data, loss)
         return loss.mean()

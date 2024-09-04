@@ -114,7 +114,6 @@ class PatchTST(Forecaster):
     def loss(self, batch_data):
         if self.use_scaling:
             self.get_scale(batch_data)
-            self.scale = self.scaler.scale
             
         inputs = self.get_inputs(batch_data, 'encode')
         inputs = self.enc_linear(inputs)
@@ -130,6 +129,7 @@ class PatchTST(Forecaster):
     def forecast(self, batch_data, num_samples=None):
         if self.use_scaling:
             self.get_scale(batch_data)
+            
             
         inputs = self.get_inputs(batch_data, 'encode')
         inputs = self.enc_linear(inputs)

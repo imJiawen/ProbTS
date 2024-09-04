@@ -1,7 +1,8 @@
 # export CUDA_VISIBLE_DEVICES=1
 
 DATA_DIR='/home/v-zhangjiaw/Blob_WestJP/v-jiawezhang/data/all_datasets/'
-LOG_DIR=/home/v-zhangjiaw/Blob_WestJP/v-jiawezhang/log/abl_norm/
+# LOG_DIR=/home/v-zhangjiaw/Blob_WestJP/v-jiawezhang/log/abl_norm/
+LOG_DIR=/home/v-zhangjiaw/Blob_EastUS/v-jiawezhang/log/abl_norm/
 
 # multivariate datasets:
 # ['exchange_rate_nips', 'solar_nips','electricity_nips', 'traffic_nips','wiki2000_nips']
@@ -21,8 +22,8 @@ LOG_DIR=/home/v-zhangjiaw/Blob_WestJP/v-jiawezhang/log/abl_norm/
 
 # if not specify dataset_path, the default path is ./datasets
 
-MODEL=gru
-CTX_LEN=36
+MODEL=dlinear
+CTX_LEN=96
 
 scaler=standard # identity, standard
 
@@ -30,9 +31,9 @@ scaler=standard # identity, standard
 revin=false
 scaling=true
 
-for DATASET in 'illness_ltsf'
+for DATASET in 'electricity_ltsf'
 do
-    for PRED_LEN in 24 36 48 60
+    for PRED_LEN in 96 192 336 720
     do
         python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
@@ -56,9 +57,9 @@ done
 revin=false
 scaling=false
 
-for DATASET in 'illness_ltsf'
+for DATASET in 'electricity_ltsf'
 do
-    for PRED_LEN in 24 36 48 60
+    for PRED_LEN in 96 192 336 720
     do
         python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
@@ -78,13 +79,12 @@ do
     done
 done
 
-
 revin=true
 scaling=false
 
-for DATASET in 'illness_ltsf'
+for DATASET in 'electricity_ltsf'
 do
-    for PRED_LEN in 24 36 48 60
+    for PRED_LEN in 96 192 336 720
     do
         python run.py --config config/default/${MODEL}.yaml --seed_everything 0  \
             --data.data_manager.init_args.path ${DATA_DIR} \
