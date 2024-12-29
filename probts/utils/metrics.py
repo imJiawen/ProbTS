@@ -10,7 +10,6 @@
 
 from typing import Optional
 import numpy as np
-from gluonts.time_feature import get_seasonality
 
 
 def mse(target: np.ndarray, forecast: np.ndarray) -> float:
@@ -28,7 +27,7 @@ def abs_error(target: np.ndarray, forecast: np.ndarray) -> float:
 
         abs\_error = sum(|Y - \hat{Y}|)
     """
-    return np.sum(np.abs(target - forecast))
+    return np.abs(target - forecast)
 
 
 def abs_target_sum(target) -> float:
@@ -48,6 +47,13 @@ def abs_target_mean(target) -> float:
     """
     return np.mean(np.abs(target))
 
+def absolute_scaled_error(
+    target,
+    forecast,
+    seasonal_error
+) -> np.ndarray:
+    return np.abs(target - forecast) / seasonal_error
+
 
 def mase(
     target: np.ndarray,
@@ -61,42 +67,9 @@ def mase(
 
     See [HA21]_ for more details.
     """
-    diff = np.mean(np.abs(target - forecast), axis=1)
-    mase = diff / seasonal_error
-    # if seasonal_error is 0, set mase to 0
-    mase = mase.filled(0)  
+    mase = absolute_scaled_error(target,forecast,seasonal_error)
+    mase = mase.filled(0) 
     return np.mean(mase)
-
-def calculate_seasonal_error(
-    past_data: np.ndarray,
-    freq: Optional[str] = None,
-):
-    r"""
-    .. math::
-
-        seasonal\_error = mean(|Y[t] - Y[t-m]|)
-
-    where m is the seasonal frequency. See [HA21]_ for more details.
-    """
-    seasonality = get_seasonality(freq)
-
-    if seasonality < len(past_data):
-        forecast_freq = seasonality
-    else:
-        # edge case: the seasonal freq is larger than the length of ts
-        # revert to freq=1
-
-        # logging.info('The seasonal frequency is larger than the length of the
-        # time series. Reverting to freq=1.')
-        forecast_freq = 1
-        
-    y_t = past_data[:, :-forecast_freq]
-    y_tm = past_data[:, forecast_freq:]
-
-    mean_diff = np.mean(np.abs(y_t - y_tm), axis=1)
-    mean_diff = np.expand_dims(mean_diff, axis=1)
-
-    return mean_diff
 
 
 

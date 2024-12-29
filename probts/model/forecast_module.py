@@ -13,6 +13,43 @@ from probts.utils.metrics import *
 from probts.utils.save_utils import update_metrics, calculate_weighted_average, load_checkpoint, get_hor_str
 from probts.utils.utils import init_class_helper
 
+from gluonts.model import evaluate_forecasts
+from gluonts.ev.metrics import (
+    MSE,
+    MAE,
+    MASE,
+    MAPE,
+    SMAPE,
+    MSIS,
+    RMSE,
+    NRMSE,
+    ND,
+    MeanWeightedSumQuantileLoss,
+)
+from collections import ChainMap
+from typing import Iterable, List, Optional, Union
+from gluonts.dataset import DataEntry
+from gluonts.time_feature import get_seasonality
+from gluonts.model import Forecast
+from gluonts.ev.ts_stats import seasonal_error
+
+# Instantiate the metrics
+metrics_func = [
+    MSE(forecast_type="mean"),
+    MSE(forecast_type=0.5),
+    MAE(),
+    MASE(),
+    MAPE(),
+    SMAPE(),
+    MSIS(),
+    RMSE(),
+    NRMSE(),
+    ND(),
+    MeanWeightedSumQuantileLoss(
+        quantile_levels=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    ),
+]
+
 def get_weights(sampling_weight_scheme, max_hor):
     '''
     return: w [max_hor]
@@ -119,7 +156,8 @@ class ProbTSForecastModule(pl.LightningModule):
             loss_weights = get_weights('random', l)
         else:
             loss_weights = None
-
+        
+        
         hor_metrics = self.evaluator(orin_future_data, denorm_forecasts, past_data=orin_past_data, freq=self.forecaster.freq, loss_weights=loss_weights)
         
         if stage == 'test':

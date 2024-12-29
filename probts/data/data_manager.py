@@ -17,6 +17,8 @@ from probts.utils.utils import ensure_list
 from probts.data.data_utils.data_scaler import StandardScaler, TemporalScaler, IdentityScaler
 from typing import Union
 
+import sys
+
 MULTI_VARIATE_DATASETS = [
     'exchange_rate_nips',
     'solar_nips',

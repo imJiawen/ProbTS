@@ -1,7 +1,7 @@
 import torch
 from einops import repeat
 from probts.model.forecaster import Forecaster
-
+import sys
 
 class MeanForecaster(Forecaster):
     def __init__(
@@ -28,6 +28,6 @@ class MeanForecaster(Forecaster):
             outputs = torch.mean(outputs, dim=0)
         else:
             raise ValueError(f"Unsupported mode: {self.mode}")
-            
+        
         outputs = repeat(outputs,'d -> b n l d', b=B, n=1, l=self.prediction_length)
         return outputs
